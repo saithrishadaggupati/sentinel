@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import { connectMongo, connectRedis } from './config/database';
 
 dotenv.config();
 
@@ -24,8 +25,20 @@ app.get('/', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Sentinel running on port ${PORT} 🛡️`);
-});
+// Start server
+const start = async () => {
+  try {
+    await connectMongo();
+    await connectRedis();
+    app.listen(PORT, () => {
+      console.log(`Sentinel running on port ${PORT} 🛡️`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+start();
 
 export default app;
