@@ -20,8 +20,10 @@ The system allows users to authenticate with Google OAuth, generate and manage A
 ## Tech Stack
 - **Backend:** Node.js, Express.js, TypeScript
 - **Databases:** MySQL, MongoDB, Redis
+- **Real-time:** WebSockets
 - **Authentication:** Google OAuth 2.0, Passport.js
-- **DevOps:** Docker, AWS EC2
+- **Docs:** Swagger / OpenAPI 3.0
+- **DevOps:** Docker, AWS EC2 , GitHub Actions
 
 ## API Endpoints
 
