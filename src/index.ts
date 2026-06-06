@@ -19,10 +19,17 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(morgan('dev'));
 app.use(express.json());
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(rateLimiter);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCssUrl: 'https://unpkg.com/swagger-ui-dist@5/swagger-ui.css',
+  customJs: [
+    'https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js',
+    'https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js',
+  ],
+}));
 app.use(session({
   secret: process.env.SESSION_SECRET!,
   resave: false,
@@ -37,7 +44,6 @@ app.get('/', (req, res) => {
 
 app.use('/auth', authRouter);
 app.use('/api/keys', apiKeysRouter);
-app.use(rateLimiter);
 
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API route reached' });
