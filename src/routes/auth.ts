@@ -1,10 +1,8 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
 import { Router } from 'express';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { prisma } from '../config/database';
+import { loginSuccess, loginFailed, logout } from '../controllers/authController';
 
 const router = Router();
 
@@ -63,9 +61,7 @@ passport.deserializeUser(async (id: number, done) => {
  *       302:
  *         description: Redirects to Google login
  */
-router.get('/google', passport.authenticate('google', {
-  scope: ['profile', 'email'],
-}));
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 /**
  * @swagger
@@ -77,34 +73,12 @@ router.get('/google', passport.authenticate('google', {
  *     responses:
  *       200:
  *         description: Login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Login successful
- *                 user:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 1
- *                     email:
- *                       type: string
- *                       example: saithrishadaggupati@gmail.com
- *                     name:
- *                       type: string
- *                       example: Thrisha
  *       401:
  *         description: Authentication failed
  */
 router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/auth/failed' }),
-  (req, res) => {
-    res.json({ message: 'Login successful', user: req.user });
-  }
+  loginSuccess
 );
 
 /**
@@ -116,18 +90,8 @@ router.get('/google/callback',
  *     responses:
  *       401:
  *         description: Google authentication failed
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: Google authentication failed
  */
-router.get('/failed', (req, res) => {
-  res.status(401).json({ error: 'Google authentication failed' });
-});
+router.get('/failed', loginFailed);
 
 /**
  * @swagger
@@ -139,19 +103,7 @@ router.get('/failed', (req, res) => {
  *     responses:
  *       200:
  *         description: Logged out successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Logged out successfully
  */
-router.get('/logout', (req, res) => {
-  req.logout(() => {
-    res.json({ message: 'Logged out successfully' });
-  });
-});
+router.get('/logout', logout);
 
 export default router;
