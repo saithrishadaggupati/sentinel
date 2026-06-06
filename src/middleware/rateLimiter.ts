@@ -7,23 +7,22 @@ const PLAN_LIMITS: Record<string, number> = {
   PRO: 10000,
 };
 
-const WINDOW_SECONDS = 60 * 60; // 1 hour
+const WINDOW_SECONDS = 60 * 60;
 
-export function rateLimiter(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
+const PUBLIC_ROUTES = ['/', '/api/test', '/api-docs', '/auth/google', '/auth/google/callback', '/auth/failed', '/auth/logout'];
+
+export function rateLimiter(req: Request, res: Response, next: NextFunction): void {
   handleRateLimit(req, res, next).catch(next);
 }
 
-async function handleRateLimit(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+async function handleRateLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    console.log('Rate limiter hit:', req.path);
+    const isPublic = PUBLIC_ROUTES.some(route => req.path === route || req.path.startsWith('/api-docs'));
+    if (isPublic) {
+      next();
+      return;
+    }
+
     const apiKey = req.headers['x-api-key'] as string;
 
     if (!apiKey) {
@@ -31,24 +30,17 @@ async function handleRateLimit(
       return;
     }
 
-    // Look up API key in MySQL via Prisma
-    const keyRecord = await prisma.apiKey.findUnique({
-  where: { key: apiKey },
-});
+    const keyRecord = await prisma.apiKey.findUnique({ where: { key: apiKey } });
     if (!keyRecord || !keyRecord.isActive) {
       res.status(401).json({ error: 'Invalid or inactive API key.' });
       return;
     }
 
-    const plan = keyRecord.plan; // FREE | BASIC | PRO
+    const plan = keyRecord.plan;
     const limit = PLAN_LIMITS[plan] ?? PLAN_LIMITS.FREE;
-
     const redisKey = `rate_limit:${apiKey}`;
+    const current = await redisClient.incr(redisKey);
 
-    // Atomic increment
-   const current = await redisClient.incr(redisKey);
-
-    // Set TTL only on first request
     if (current === 1) {
       await redisClient.expire(redisKey, WINDOW_SECONDS);
     }
@@ -56,7 +48,6 @@ async function handleRateLimit(
     const ttl = await redisClient.ttl(redisKey);
     const resetTime = Math.floor(Date.now() / 1000) + ttl;
 
-    // Set rate limit headers
     res.setHeader('X-RateLimit-Limit', limit);
     res.setHeader('X-RateLimit-Remaining', Math.max(0, limit - current));
     res.setHeader('X-RateLimit-Reset', resetTime);
