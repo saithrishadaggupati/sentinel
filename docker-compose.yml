@@ -2,6 +2,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: sentinel-mysql
+    command: --skip-host-cache --skip-name-resolve
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: sentinel
@@ -23,6 +24,18 @@ services:
     container_name: sentinel-redis
     ports:
       - "6380:6379"
+
+  backend:
+    build: .
+    container_name: sentinel-backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - mysql
+      - mongodb
+      - redis
 
 volumes:
   mysql_data:

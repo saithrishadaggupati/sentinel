@@ -27,6 +27,10 @@ I'd already used PostgreSQL in my previous project, so I used Sentinel as an opp
     },
     servers: [
       {
+        url: 'http://13.234.122.84:3000',
+        description: 'Production Server',
+      },
+      {
         url: 'http://localhost:3000',
         description: 'Local Development',
       },
