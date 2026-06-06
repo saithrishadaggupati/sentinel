@@ -39,7 +39,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.get('/', (req, res) => {
-  res.json({ message: 'Sentinel is running 🛡️', version: '1.0.0', status: 'healthy' });
+  res.json({ message: 'Sentinel is running', version: '1.0.0', status: 'healthy' });
 });
 
 app.use('/auth', authRouter);
@@ -54,7 +54,7 @@ const start = async () => {
     await connectMongo();
     await connectRedis();
     const server = app.listen(PORT, () => {
-      console.log(`Sentinel running on port ${PORT} 🛡️`);
+      console.log('Sentinel running on port ' + PORT);
     });
     initWebSocket(server);
   } catch (error) {
