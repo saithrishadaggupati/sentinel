@@ -11,14 +11,6 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
-  mongodb:
-    image: mongo:6.0
-    container_name: sentinel-mongo
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-
   redis:
     image: redis:7-alpine
     container_name: sentinel-redis
@@ -34,9 +26,7 @@ services:
       - .env
     depends_on:
       - mysql
-      - mongodb
       - redis
 
 volumes:
   mysql_data:
-  mongo_data:
