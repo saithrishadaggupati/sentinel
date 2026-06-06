@@ -7,7 +7,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import session from 'express-session';
 import passport from 'passport';
-import { connectMongo, connectRedis } from './config/database';
+import { connectRedis } from './config/database';
 import { rateLimiter } from './middleware/rateLimiter';
 import authRouter from './routes/auth';
 import apiKeysRouter from './routes/apiKeys';
@@ -51,7 +51,6 @@ app.get('/api/test', (req, res) => {
 
 const start = async () => {
   try {
-    await connectMongo();
     await connectRedis();
     const server = app.listen(PORT, () => {
       console.log('Sentinel running on port ' + PORT);
