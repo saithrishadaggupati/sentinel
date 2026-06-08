@@ -26,6 +26,26 @@ async function handleRateLimit(req: Request, res: Response, next: NextFunction):
     const apiKey = req.headers['x-api-key'] as string;
 
     if (!apiKey) {
+      // IP-based rate limiting for unauthenticated requests — prevents DDoS
+      const ip = req.ip || req.socket.remoteAddress || 'unknown';
+      const ipKey = `rate_limit:ip:${ip}`;
+
+      const ipResult = await redisClient.eval(`
+        local current = redis.call('INCR', KEYS[1])
+        if current == 1 then
+          redis.call('EXPIRE', KEYS[1], ARGV[1])
+        end
+        return current
+      `, {
+        keys: [ipKey],
+        arguments: ['60'],
+      }) as number;
+
+      if (ipResult > 20) {
+        res.status(429).json({ error: 'Too many requests from this IP. Please provide an API key.' });
+        return;
+      }
+
       res.status(401).json({ error: 'Missing API key. Pass it as x-api-key header.' });
       return;
     }
@@ -39,13 +59,24 @@ async function handleRateLimit(req: Request, res: Response, next: NextFunction):
     const plan = keyRecord.plan;
     const limit = PLAN_LIMITS[plan] ?? PLAN_LIMITS.FREE;
     const redisKey = `rate_limit:${apiKey}`;
-    const current = await redisClient.incr(redisKey);
 
-    if (current === 1) {
-      await redisClient.expire(redisKey, WINDOW_SECONDS);
-    }
+    // Atomic Lua script: increment + set expiry in a single network call
+    // Prevents race condition where TTL is never set if two requests arrive simultaneously
+    const luaScript = `
+      local current = redis.call('INCR', KEYS[1])
+      if current == 1 then
+        redis.call('EXPIRE', KEYS[1], ARGV[1])
+      end
+      return {current, redis.call('TTL', KEYS[1])}
+    `;
 
-    const ttl = await redisClient.ttl(redisKey);
+    const result = await redisClient.eval(luaScript, {
+      keys: [redisKey],
+      arguments: [String(WINDOW_SECONDS)],
+    }) as [number, number];
+
+    const current = result[0];
+    const ttl = result[1];
     const resetTime = Math.floor(Date.now() / 1000) + ttl;
 
     res.setHeader('X-RateLimit-Limit', limit);
