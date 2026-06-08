@@ -56,6 +56,22 @@ TypeScript · Node.js · Express · MySQL · Prisma ORM · Redis · React · Vit
 
 ---
 
+## Monitoring
+
+Prometheus scrapes metrics every 15 seconds. Grafana dashboard tracks three signals:
+
+- **Request Rate** — `rate(sentinel_http_requests_total[5m])`
+- **P99 Latency** — `histogram_quantile(0.99, rate(sentinel_http_request_duration_seconds_bucket[5m]))`
+- **Rate Limit Hits** — `rate(sentinel_rate_limit_hits_total[5m])`
+
+
+
+![Grafana Dashboard](docs/images/grafana-dashboard.png)
+
+
+
+Grafana runs at `http://localhost:3002`. Prometheus at `http://localhost:9090`.
+
 ## Run locally
 
 ```bash
@@ -97,8 +113,6 @@ npm test
 ## Known limitations
 
 **WebSocket scaling** — connections are in-memory per server instance. Multi-container deployment would need Redis Pub/Sub as a shared message broker so all instances can broadcast to each other's clients.
-
-**No Prometheus/Grafana** — morgan handles request logging but there's no metrics exporter. In production you'd want P99 latency tracking and alerting, not just logs.
 
 **Synchronous request logging** — API usage is tracked in MySQL on the request path. At high volume, this becomes a bottleneck. The right fix is Kafka or a message queue: log to the queue on the hot path, drain to the database asynchronously.
 

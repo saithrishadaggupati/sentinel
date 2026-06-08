@@ -1,3 +1,4 @@
+import { rateLimitHits } from '../metrics';
 import { Request, Response, NextFunction } from 'express';
 import { prisma, redisClient } from '../config/database';
 
@@ -9,7 +10,7 @@ const PLAN_LIMITS: Record<string, number> = {
 
 const WINDOW_SECONDS = 60 * 60;
 
-const PUBLIC_ROUTES = ['/', '/api/test', '/api-docs', '/auth/google', '/auth/google/callback', '/auth/failed', '/auth/logout'];
+const PUBLIC_ROUTES = ['/', '/api/test', '/api-docs', '/auth/google', '/auth/google/callback', '/auth/failed', '/auth/logout', '/metrics'];
 
 export function rateLimiter(req: Request, res: Response, next: NextFunction): void {
   handleRateLimit(req, res, next).catch(next);
@@ -85,6 +86,7 @@ async function handleRateLimit(req: Request, res: Response, next: NextFunction):
     res.setHeader('X-RateLimit-Plan', plan);
 
     if (current > limit) {
+      rateLimitHits.inc({ plan });
       res.status(429).json({
         error: 'Rate limit exceeded.',
         plan,

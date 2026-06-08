@@ -12,6 +12,7 @@ import { rateLimiter } from './middleware/rateLimiter';
 import authRouter from './routes/auth';
 import apiKeysRouter from './routes/apiKeys';
 import { initWebSocket } from './services/websocket';
+import { register, httpRequestCounter, httpRequestDuration } from './metrics';
 
 dotenv.config();
 
@@ -22,6 +23,17 @@ app.use(cors());
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(morgan('dev'));
 app.use(express.json());
+
+// Metrics middleware — tracks duration and count per route
+app.use((req, res, next) => {
+  const end = httpRequestDuration.startTimer();
+  res.on('finish', () => {
+    const route = req.route?.path || req.path;
+    end({ method: req.method, route, status: res.statusCode });
+    httpRequestCounter.inc({ method: req.method, route, status: res.statusCode });
+  });
+  next();
+});
 app.use(rateLimiter);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCssUrl: 'https://unpkg.com/swagger-ui-dist@5/swagger-ui.css',
@@ -47,6 +59,12 @@ app.use('/api/keys', apiKeysRouter);
 
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API route reached' });
+});
+
+// Prometheus metrics endpoint
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
 });
 
 const start = async () => {
