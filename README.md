@@ -72,6 +72,23 @@ Prometheus scrapes metrics every 15 seconds. Grafana dashboard tracks three sign
 
 Grafana runs at `http://localhost:3002`. Prometheus at `http://localhost:9090`.
 
+---
+
+## Load Testing
+
+Tested with Locust at 300 concurrent users against the rate-limited `/keys/user/:id` endpoint (FREE plan, 100 req/hr limit).
+
+| Metric | Value |
+|--------|-------|
+| Sustained throughput | ~480 req/s |
+| Median latency | 230ms |
+| P99 latency | 720ms |
+| P99.9 latency | 1.5s |
+
+The Redis-backed limiter enforced the 100 req/hr cap exactly — 100 requests succeeded, the remaining traffic correctly received `429` with proper `X-RateLimit-*` headers. No errors or crashes at 300 concurrent users on a t3.small instance.
+
+Full results: [docs/LOAD_TEST.md](docs/LOAD_TEST.md)
+
 ## Run locally
 
 ```bash
