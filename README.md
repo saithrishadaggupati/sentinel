@@ -103,6 +103,16 @@ Backend at `http://localhost:3000`. React dashboard at `http://localhost:3001`. 
 
 ---
 
+## Infrastructure as Code
+
+The EC2 instance, security group, and Elastic IP are provisioned with Terraform instead of manual console setup — see [infra/](infra/).
+
+```bash
+cd infra
+terraform init
+terraform plan
+terraform apply
+
 ## API overview
 
 | Method | Endpoint | Description |
