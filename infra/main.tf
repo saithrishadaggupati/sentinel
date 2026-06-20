@@ -80,5 +80,3 @@ resource "aws_eip" "sentinel_eip" {
     Name = "${var.project_name}-eip"
   }
 }
-# test
-
