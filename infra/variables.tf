@@ -31,5 +31,5 @@ variable "root_volume_size" {
 variable "allowed_ssh_cidr" {
   description = "CIDR block allowed to SSH into the instance. Restrict this to your own IP in production."
   type        = string
-  default     = "157.50.148.135/32"
+  default     = "157.50.151.39/32"
 }
