@@ -1,6 +1,18 @@
 import { rateLimitHits } from '../metrics';
 import { Request, Response, NextFunction } from 'express';
 import { prisma, redisClient } from '../config/database';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+
+const sqsClient = new SQSClient({ region: process.env.AWS_REGION || 'ap-south-1' });
+
+function logRequestAsync(apiKey: string): void {
+  sqsClient.send(new SendMessageCommand({
+    QueueUrl: process.env.SQS_QUEUE_URL,
+    MessageBody: JSON.stringify({ apiKey, timestamp: new Date().toISOString() }),
+  })).catch(err => {
+    console.error('Failed to send SQS log message:', err);
+  });
+}
 
 const PLAN_LIMITS: Record<string, number> = {
   FREE: 100,
@@ -55,6 +67,7 @@ async function handleRateLimit(req: Request, res: Response, next: NextFunction):
     if (!keyRecord || !keyRecord.isActive) {
       res.status(401).json({ error: 'Invalid or inactive API key.' });
       return;
+      logRequestAsync(apiKey);
     }
 
     const plan = keyRecord.plan;
