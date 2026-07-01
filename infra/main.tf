@@ -50,6 +50,7 @@ resource "aws_instance" "sentinel" {
   instance_type          = var.instance_type
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.sentinel_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_sqs_profile.name
   root_block_device {
     volume_size = var.root_volume_size
     volume_type = "gp3"
@@ -163,7 +164,7 @@ resource "aws_lambda_function" "sentinel_logging_consumer" {
 
   environment {
     variables = {
-      DB_HOST     = aws_eip.sentinel_eip.public_ip
+      DB_HOST     = aws_instance.sentinel.private_ip
       DB_USER     = "root"
       DB_PASSWORD = "password"
       DB_NAME     = "sentinel"
@@ -181,4 +182,40 @@ resource "aws_lambda_event_source_mapping" "sqs_to_lambda" {
   function_name            = aws_lambda_function.sentinel_logging_consumer.arn
   batch_size                = 10
   function_response_types   = ["ReportBatchItemFailures"]
+}
+resource "aws_iam_role" "ec2_sqs_role" {
+  name = "${var.project_name}-ec2-sqs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+    }]
+  })
+
+  tags = {
+    Project   = "Sentinel"
+    ManagedBy = "Terraform"
+  }
+}
+
+resource "aws_iam_role_policy" "ec2_sqs_send_policy" {
+  name = "${var.project_name}-ec2-sqs-send-policy"
+  role = aws_iam_role.ec2_sqs_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["sqs:SendMessage"]
+      Resource = aws_sqs_queue.sentinel_logging_queue.arn
+    }]
+  })
+}
+
+resource "aws_iam_instance_profile" "ec2_sqs_profile" {
+  name = "${var.project_name}-ec2-sqs-profile"
+  role = aws_iam_role.ec2_sqs_role.name
 }
