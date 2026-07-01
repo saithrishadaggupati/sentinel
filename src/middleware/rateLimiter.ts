@@ -67,8 +67,9 @@ async function handleRateLimit(req: Request, res: Response, next: NextFunction):
     if (!keyRecord || !keyRecord.isActive) {
       res.status(401).json({ error: 'Invalid or inactive API key.' });
       return;
-      logRequestAsync(apiKey);
     }
+
+    logRequestAsync(apiKey);
 
     const plan = keyRecord.plan;
     const limit = PLAN_LIMITS[plan] ?? PLAN_LIMITS.FREE;
