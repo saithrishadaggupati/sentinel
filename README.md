@@ -1,6 +1,42 @@
-﻿# Sentinel
+# Sentinel
 
-TypeScript, Node.js, Express, MySQL, Redis, React/Vite, Docker, AWS, CI - see badges on GitHub.
+
+
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+
+ 
+
+![Node.js](https://img.shields.io/badge/Node.js-20-green)
+
+ 
+
+![MySQL](https://img.shields.io/badge/MySQL-8.0-orange)
+
+ 
+
+![Redis](https://img.shields.io/badge/Redis-7-red)
+
+ 
+
+![React](https://img.shields.io/badge/React-Vite-cyan)
+
+ 
+
+![Docker](https://img.shields.io/badge/Docker-Compose-blue)
+
+ 
+
+![AWS](https://img.shields.io/badge/AWS-EC2-yellow)
+
+ 
+
+![CI](https://img.shields.io/badge/CI-GitHub_Actions-green)
+
+ 
+
+![Next.js](https://img.shields.io/badge/Next.js-15-black)
+
+
 
 I kept seeing x-api-key headers in production APIs and wondering what was actually behind them. How do companies like Stripe or Twilio generate keys, track usage, and enforce rate limits per customer? I couldn't find a simple answer, so I built the whole thing myself.
 
@@ -17,17 +53,17 @@ Three plans: FREE (100 req/hr), BASIC (1000 req/hr), PRO (10000 req/hr).
 
 ---
 
-## Next.js App Router port
+## sentinel-next
 
-A separate frontend port lives in [sentinel-next/](sentinel-next/) - the same dashboard and key management views rebuilt in Next.js App Router instead of Vite. It doesn't replace the original frontend, it's a second implementation used to work through Server Components, Server Actions, and the client/server split App Router forces you to make.
+A second frontend, in [sentinel-next/](sentinel-next/), ports the dashboard and key management views to Next.js App Router. Same two views as the Vite dashboard - live stats and key management - rebuilt on Server Components and Server Actions instead of client-side fetch/useEffect.
 
-/dashboard - the live WebSocket stats view, kept as a Client Component since a Server Component can't hold a persistent connection open.
+/dashboard - WebSocket-driven, stays a Client Component (no way to hold a socket open from a Server Component).
 
-/keys - key generation and revocation, built entirely with Server Components and Server Actions. The page fetches the key list directly with await fetch() (no useEffect), and generate/revoke are wired straight to form actions with no client-side fetch calls.
+/keys - Server Component fetches the key list on render. Generate/revoke are Server Actions bound to plain forms; no client fetch calls, no manual state.
 
-Porting this surfaced two real issues in the backend: the router is actually mounted at /api/keys (not /keys, which is what this README documents above and in the API table below), and the rateLimiter middleware required an x-api-key header on the key-generation route itself, which is a chicken-and-egg problem since you need a key to make a key.
+Two bugs in the existing backend surfaced during the port: the key routes are mounted at /api/keys, not /keys as documented below; and rateLimiter required an API key on the key-generation endpoint itself, blocking the only route that could produce one. Fixed by allowlisting /api/keys in the rate limiter.
 
-See [sentinel-next/README.md](sentinel-next/README.md) for the full writeup.
+Setup: [sentinel-next/README.md](sentinel-next/README.md)
 
 ---
 
@@ -174,12 +210,12 @@ Every protected route requires x-api-key header. Rate limit headers returned on 
 
 ## sentinel-next
 
-Frontend port to Next.js App Router, in sentinel-next/. Same two views as the Vite dashboard - live stats and key management - rebuilt to use Server Components and Server Actions instead of client-side fetch/useEffect.
+Ported the dashboard and keys UI to Next.js App Router, in sentinel-next/. Same functionality, different rendering model - Server Components instead of useEffect + fetch, Server Actions instead of a fetch call from a button handler.
 
-/dashboard - WebSocket-driven, stays a Client Component (no way to hold a socket open from a Server Component).
+/dashboard stays client-side because it's a WebSocket connection, and a Server Component can't hold one open.
 
-/keys - Server Component fetches the key list on render. Generate/revoke are Server Actions bound to plain forms; no client fetch calls, no manual state.
+/keys doesn't need to be. The page fetches keys on the server and renders the list directly. Generate and revoke are just forms - form action={someServerAction}, no client JS involved.
 
-Two bugs in the existing backend surfaced during the port: the key routes are mounted at /api/keys, not /keys as documented below; and rateLimiter required an API key on the key-generation endpoint itself, blocking the only route that could produce one. Fixed by allowlisting /api/keys in the rate limiter.
+Found two things wrong with the backend while doing this: the routes actually live under /api/keys, not /keys like this README says further down, and the rate limiter was rejecting /api/keys/generate itself because it has no API key yet - you can't get a key without a key. Fixed by allowlisting /api/keys in the limiter.
 
-Setup: sentinel-next/README.md
+sentinel-next/README.md has setup instructions.
