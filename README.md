@@ -2,43 +2,7 @@
 
 
 
-
-
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
-
- 
-
-![Node.js](https://img.shields.io/badge/Node.js-20-green)
-
- 
-
-![MySQL](https://img.shields.io/badge/MySQL-8.0-orange)
-
- 
-
-![Redis](https://img.shields.io/badge/Redis-7-red)
-
- 
-
-![React](https://img.shields.io/badge/React-Vite-cyan)
-
- 
-
-![Docker](https://img.shields.io/badge/Docker-Compose-blue)
-
- 
-
-![AWS](https://img.shields.io/badge/AWS-EC2-yellow)
-
- 
-
-![CI](https://img.shields.io/badge/CI-GitHub_Actions-green)
-
- 
-
-![Next.js](https://img.shields.io/badge/Next.js-15-black)
-
-
 
  
 
@@ -77,6 +41,7 @@
 I kept seeing x-api-key headers in production APIs and wondering what was actually behind them. How do companies like Stripe or Twilio generate keys, track usage, and enforce rate limits per customer? I couldn't find a simple answer, so I built the whole thing myself.
 
 Live API: http://15.207.91.11:3000
+
 Swagger docs: http://15.207.91.11:3000/api-docs/
 
 ---
@@ -91,15 +56,15 @@ Three plans: FREE (100 req/hr), BASIC (1000 req/hr), PRO (10000 req/hr).
 
 ## sentinel-next
 
-A second frontend, in [sentinel-next/](sentinel-next/), ports the dashboard and key management views to Next.js App Router. Same two views as the Vite dashboard - live stats and key management - rebuilt on Server Components and Server Actions instead of client-side fetch/useEffect.
+Ported the dashboard and keys UI to Next.js App Router, in sentinel-next/. Same functionality, different rendering model - Server Components instead of useEffect + fetch, Server Actions instead of a fetch call from a button handler.
 
-/dashboard - WebSocket-driven, stays a Client Component (no way to hold a socket open from a Server Component).
+/dashboard stays client-side because it's a WebSocket connection, and a Server Component can't hold one open.
 
-/keys - Server Component fetches the key list on render. Generate/revoke are Server Actions bound to plain forms; no client fetch calls, no manual state.
+/keys doesn't need to be. The page fetches keys on the server and renders the list directly. Generate and revoke are just forms - form action pointing at a Server Action, no client JS involved.
 
-Two bugs in the existing backend surfaced during the port: the key routes are mounted at /api/keys, not /keys as documented below; and rateLimiter required an API key on the key-generation endpoint itself, blocking the only route that could produce one. Fixed by allowlisting /api/keys in the rate limiter.
+Found two things wrong with the backend while doing this: the routes actually live under /api/keys, not /keys like this README says further down, and the rate limiter was rejecting /api/keys/generate itself because it has no API key yet - you can't get a key without a key. Fixed by allowlisting /api/keys in the limiter.
 
-Setup: [sentinel-next/README.md](sentinel-next/README.md)
+sentinel-next/README.md has setup instructions.
 
 ---
 
@@ -241,17 +206,3 @@ Every protected route requires x-api-key header. Rate limit headers returned on 
 **WebSocket scaling** - connections are in-memory per server instance. Multi-container deployment would need Redis Pub/Sub as a shared message broker so all instances can broadcast to each other's clients.
 
 **API key shown once** - on generation, the full key is returned and never retrievable again. This is intentional and matches how Stripe/GitHub handle it, but there's no recovery path if you lose it. A real system would also support key rotation.
-
----
-
-## sentinel-next
-
-Ported the dashboard and keys UI to Next.js App Router, in sentinel-next/. Same functionality, different rendering model - Server Components instead of useEffect + fetch, Server Actions instead of a fetch call from a button handler.
-
-/dashboard stays client-side because it's a WebSocket connection, and a Server Component can't hold one open.
-
-/keys doesn't need to be. The page fetches keys on the server and renders the list directly. Generate and revoke are just forms - form action={someServerAction}, no client JS involved.
-
-Found two things wrong with the backend while doing this: the routes actually live under /api/keys, not /keys like this README says further down, and the rate limiter was rejecting /api/keys/generate itself because it has no API key yet - you can't get a key without a key. Fixed by allowlisting /api/keys in the limiter.
-
-sentinel-next/README.md has setup instructions.
