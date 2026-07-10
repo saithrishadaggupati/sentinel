@@ -2,7 +2,43 @@
 
 
 
+
+
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+
+ 
+
+![Node.js](https://img.shields.io/badge/Node.js-20-green)
+
+ 
+
+![MySQL](https://img.shields.io/badge/MySQL-8.0-orange)
+
+ 
+
+![Redis](https://img.shields.io/badge/Redis-7-red)
+
+ 
+
+![React](https://img.shields.io/badge/React-Vite-cyan)
+
+ 
+
+![Docker](https://img.shields.io/badge/Docker-Compose-blue)
+
+ 
+
+![AWS](https://img.shields.io/badge/AWS-EC2-yellow)
+
+ 
+
+![CI](https://img.shields.io/badge/CI-GitHub_Actions-green)
+
+ 
+
+![Next.js](https://img.shields.io/badge/Next.js-15-black)
+
+
 
  
 
