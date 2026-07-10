@@ -30,7 +30,7 @@ export function rateLimiter(req: Request, res: Response, next: NextFunction): vo
 
 async function handleRateLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const isPublic = PUBLIC_ROUTES.some(route => req.path === route || req.path.startsWith('/api-docs'));
+    const isPublic = PUBLIC_ROUTES.some(route => req.path === route || req.path.startsWith('/api-docs') || req.path.startsWith('/api/keys'));
     if (isPublic) {
       next();
       return;
